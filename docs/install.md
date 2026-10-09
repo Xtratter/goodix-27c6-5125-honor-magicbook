@@ -98,6 +98,12 @@ and falls back to the password. Rollback: `sudo cp /etc/pam.d/sudo.bak-before-fp
 Nothing to change: `kscreenlocker` ships `/usr/lib/pam.d/kde-fingerprint` with `pam_fprintd.so`,
 and the lock screen uses the fingerprint enrolled in fprintd.
 
+## 7. Fingerprint in KDE password dialogs (polkit)
+
+`/etc/pam.d/polkit-1` does not exist by default (the system one is `/usr/lib/pam.d/polkit-1`). Create it with the same content plus a first line
+`auth  sufficient  pam_fprintd.so max-tries=3 timeout=15`, then test with `pkexec true`. Rollback: delete `/etc/pam.d/polkit-1`.
+Write the file from a temporary file (`sudo install -m 644 file /etc/pam.d/polkit-1`): an empty PAM file breaks these dialogs.
+
 ## Using it on the lock screen (KDE Plasma 6.7)
 
 - **Wake the lock screen first.** The Plasma lock screen starts the fingerprint check only when its interface becomes visible, i.e. after a key

@@ -98,6 +98,12 @@ auth  sufficient  pam_fprintd.so max-tries=3 timeout=15
 Менять ничего не нужно: `kscreenlocker` сам поставляет `/usr/lib/pam.d/kde-fingerprint` с
 `pam_fprintd.so`, и экран блокировки использует записанный в fprintd отпечаток.
 
+## 7. Отпечаток в окнах запроса пароля KDE (polkit)
+
+Файла `/etc/pam.d/polkit-1` по умолчанию нет (системный лежит в `/usr/lib/pam.d/polkit-1`). Создайте его с тем же содержимым и первой строкой
+`auth  sufficient  pam_fprintd.so max-tries=3 timeout=15`, проверка: `pkexec true`. Откат: удалить `/etc/pam.d/polkit-1`.
+Пишите файл через временный (`sudo install -m 644 файл /etc/pam.d/polkit-1`): пустой PAM-файл ломает эти окна.
+
 ## Использование на экране блокировки (KDE Plasma 6.7)
 
 - **Сначала разбудите экран блокировки.** Экран блокировки Plasma запускает проверку отпечатка только когда его интерфейс становится видимым, то есть после
