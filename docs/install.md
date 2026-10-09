@@ -98,6 +98,12 @@ and falls back to the password. Rollback: `sudo cp /etc/pam.d/sudo.bak-before-fp
 Nothing to change: `kscreenlocker` ships `/usr/lib/pam.d/kde-fingerprint` with `pam_fprintd.so`,
 and the lock screen uses the fingerprint enrolled in fprintd.
 
+## Optional: accuracy and speed patches
+
+Three small patches to the driver (retry weak frames, a coverage limit, an answer in ~0.15 s instead of ~1.5 s)
+are in [`patches/`](../patches/); see [accuracy-patch.md](accuracy-patch.md) for what they change and how far
+the measurements can be trusted. Apply them to `libfprint-goodix5125` with `git am` before step 1's `makepkg`.
+
 ## Health check
 
 ```sh

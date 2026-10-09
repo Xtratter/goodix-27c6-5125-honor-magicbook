@@ -1,0 +1,56 @@
+From 214386c879ad3ac375ffb729f9dba4533dbf924a Mon Sep 17 00:00:00 2001
+From: Xtratter <1359019+Xtratter@users.noreply.github.com>
+Date: Fri, 9 Oct 2026 11:25:06 +0300
+Subject: [PATCH 2/3] goodix5125: Require 85% coverage for a verification frame
+
+Frames with coverage between 65 and 84 never matched in measurements on one
+unit (the weakest match had coverage 91), but were compared and reported as a
+mismatch. Retry them instead, with a verification-specific limit
+(OC_VERIFY_MIN_COVERAGE); the enrolment limits are unchanged.
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+---
+ libfprint/drivers/goodix5125/chicago/openchicago.c | 9 +++++----
+ libfprint/drivers/goodix5125/chicago/openchicago.h | 6 ++++++
+ 2 files changed, 11 insertions(+), 4 deletions(-)
+
+diff --git a/libfprint/drivers/goodix5125/chicago/openchicago.c b/libfprint/drivers/goodix5125/chicago/openchicago.c
+index 25110c5..a909e97 100644
+--- a/libfprint/drivers/goodix5125/chicago/openchicago.c
++++ b/libfprint/drivers/goodix5125/chicago/openchicago.c
+@@ -823,10 +823,11 @@ oc_identify (OcSession      *self,
+       return TRUE;
+     }
+ 
+-  /* The Windows engine applies the same frame thresholds when it compares a
+-   * touch (min_image_coverage 65, min_image_quality 25) as when it enrols
+-   * one: a weaker frame is retried instead of being scored as a mismatch. */
+-  if (f->coverage < OC_ENGINE_MIN_COVERAGE)
++  /* The Windows engine applies frame thresholds when it compares a touch
++   * (min_image_coverage 65, min_image_quality 25): a weaker frame is retried
++   * instead of being scored as a mismatch.  The coverage limit is stricter
++   * here: frames well below OC_VERIFY_MIN_COVERAGE never matched in practice. */
++  if (f->coverage < OC_VERIFY_MIN_COVERAGE)
+     result->reject = OC_REJECT_TOO_SHORT;
+   else if (f->quality < OC_ENGINE_MIN_QUALITY)
+     result->reject = OC_REJECT_LOW_QUALITY;
+diff --git a/libfprint/drivers/goodix5125/chicago/openchicago.h b/libfprint/drivers/goodix5125/chicago/openchicago.h
+index 54b6318..1b0596f 100644
+--- a/libfprint/drivers/goodix5125/chicago/openchicago.h
++++ b/libfprint/drivers/goodix5125/chicago/openchicago.h
+@@ -35,6 +35,12 @@ G_BEGIN_DECLS
+ #define OC_ENGINE_MIN_QUALITY 25u    /* min. frame quality */
+ #define OC_ENGINE_MIN_COVERAGE 65u   /* min. frame coverage */
+ 
++/* Verification: a frame that covers less than this is retried, not compared.
++ * Measured on one unit: the weakest match had coverage 91, every frame that
++ * scored 0 below 90 had coverage <= 84 (the enrolment minimum above is too
++ * lenient for verification). */
++#define OC_VERIFY_MIN_COVERAGE 85u
++
+ typedef struct _OcSession OcSession;
+ 
+ /* Why a frame was not used (or, for OC_REJECT_TIP, not counted). */
+-- 
+2.55.0
+

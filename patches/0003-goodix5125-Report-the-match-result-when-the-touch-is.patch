@@ -1,0 +1,167 @@
+From 9fb5b27f02be68256444a9deb4b73361584eccfb Mon Sep 17 00:00:00 2001
+From: Xtratter <1359019+Xtratter@users.noreply.github.com>
+Date: Fri, 9 Oct 2026 11:11:01 +0300
+Subject: [PATCH 3/3] goodix5125: Report the match result when the touch is
+ decided, not on lift
+
+The decision of a touch takes ~0.15 s, but the result was handed to libfprint
+only after the finger was lifted (finger_removed -> finish_action ->
+finish_match), so fprintd's client saw it 1-2 s late. Report the verify or
+identify result as soon as the touch is decided; the action still completes
+after the lift, so the sensor is not re-armed under a resting finger (the
+initialization refuses to run with a finger on it). The openchicago state is
+saved at the same point because a client may cancel the action before the
+lift.
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+---
+ libfprint/drivers/goodix5125/goodix5125.c | 82 +++++++++++++++--------
+ 1 file changed, 55 insertions(+), 27 deletions(-)
+
+diff --git a/libfprint/drivers/goodix5125/goodix5125.c b/libfprint/drivers/goodix5125/goodix5125.c
+index c36713d..2b52071 100644
+--- a/libfprint/drivers/goodix5125/goodix5125.c
++++ b/libfprint/drivers/goodix5125/goodix5125.c
+@@ -135,6 +135,8 @@ struct _FpDeviceGoodix5125
+   guint            match_attempt;
+   gboolean         match_exhausted_bad_quality;
+   gboolean         match_decided;
++  gboolean         match_reported;   /* the result went to libfprint already */
++  gboolean         match_defer_report; /* power-button frames: report only at the end */
+   FpiMatchResult   match_verify_result;
+   FpPrint         *match_identify_match;
+   GVariant        *match_updated;
+@@ -1021,6 +1023,7 @@ clear_match_result (FpDeviceGoodix5125 *self)
+   self->match_attempt = 0;
+   self->match_exhausted_bad_quality = FALSE;
+   self->match_decided = FALSE;
++  self->match_reported = FALSE;
+   self->match_verify_result = FPI_MATCH_FAIL;
+   self->match_identify_match = NULL;
+   g_clear_pointer (&self->match_updated, g_variant_unref);
+@@ -1207,6 +1210,44 @@ variant_unref0 (gpointer data)
+     g_variant_unref (data);
+ }
+ 
++/* Hand the decision to libfprint.  It is called as soon as a touch is decided,
++ * not when the finger is lifted: the decision takes ~0.15 s, the lift can take
++ * a second or two, and fprintd only tells its client the result after this
++ * report.  The action still ends after the lift (finish_match), so the sensor
++ * is not re-armed under a resting finger. */
++static void
++report_match_result (FpDeviceGoodix5125 *self)
++{
++  FpDevice *dev = FP_DEVICE (self);
++  gboolean is_verify = self->action_kind == GOODIX5125_ACTION_VERIFY;
++  FpPrint *matched_print;
++
++  if (self->match_reported)
++    return;
++
++  matched_print = is_verify ?
++                  (self->match_verify_result == FPI_MATCH_SUCCESS ?
++                   self->match_template : NULL) :
++                  self->match_identify_match;
++
++  /* Template study without the learned-template store (it could not be
++   * written): the learned template replaces the print data in memory only.
++   * libfprint has no "print updated" signal; a caller keeping the print (or
++   * re-saving it after the match) gets the update, fprintd does not. */
++  if (matched_print && self->match_updated)
++    {
++      g_object_set (G_OBJECT (matched_print), "fpi-data", self->match_updated,
++                    NULL);
++      fp_dbg ("template study updated the matched print");
++    }
++
++  self->match_reported = TRUE;
++  if (is_verify)
++    fpi_device_verify_report (dev, self->match_verify_result, NULL, NULL);
++  else
++    fpi_device_identify_report (dev, matched_print, NULL, NULL);
++}
++
+ static void
+ match_frame (FpDeviceGoodix5125 *self,
+              const guint16      *frame)
+@@ -1260,6 +1301,12 @@ match_frame (FpDeviceGoodix5125 *self,
+   goodix5125_match_step_clear (&step);
+   self->match_decided = TRUE;
+   self->cycle_should_continue = FALSE;
++  /* the power-button frames are tried one after another; only the outcome
++   * of the last one counts, and it is reported when the action ends */
++  if (self->match_defer_report)
++    return;
++  report_match_result (self);
++  save_algo_state (self);   /* a client may cancel the action before the lift */
+ }
+ 
+ /* The power-button frames are tried before the first touch: a match ends the
+@@ -1280,6 +1327,7 @@ match_pov_frames (FpDeviceGoodix5125 *self)
+       return FALSE;
+     }
+ 
++  self->match_defer_report = TRUE;
+   for (guint i = 0; i < self->n_pov_frames && !matched; i++)
+     {
+       match_frame (self, self->pov_frames[i]);
+@@ -1299,6 +1347,8 @@ match_pov_frames (FpDeviceGoodix5125 *self)
+         }
+     }
+ 
++  self->match_defer_report = FALSE;
++
+   /* one use only, and no raw biometric data left behind */
+   clear_pov_frames (self);
+   return matched;
+@@ -1635,7 +1685,6 @@ finish_match (FpDeviceGoodix5125 *self)
+ {
+   FpDevice *dev = FP_DEVICE (self);
+   gboolean is_verify = self->action_kind == GOODIX5125_ACTION_VERIFY;
+-  FpPrint *matched_print;
+ 
+   save_algo_state (self);
+ 
+@@ -1669,34 +1718,13 @@ finish_match (FpDeviceGoodix5125 *self)
+       return;
+     }
+ 
+-  matched_print = is_verify ?
+-                  (self->match_verify_result == FPI_MATCH_SUCCESS ?
+-                   self->match_template : NULL) :
+-                  self->match_identify_match;
+-
+-  /* Template study without the learned-template store (it could not be
+-  * written): the learned template replaces the print data in memory only.
+-  * libfprint has no "print updated" signal; a caller keeping the print (or
+-  * re-saving it after the match) gets the update, fprintd does not. */
+-  if (matched_print && self->match_updated)
+-    {
+-      g_object_set (G_OBJECT (matched_print), "fpi-data", self->match_updated,
+-                    NULL);
+-      fp_dbg ("template study updated the matched print");
+-    }
+-
++  /* normally reported when the touch was decided (match_frame ()) */
++  report_match_result (self);
++  reset_action_state (self);
+   if (is_verify)
+-    {
+-      fpi_device_verify_report (dev, self->match_verify_result, NULL, NULL);
+-      reset_action_state (self);
+-      fpi_device_verify_complete (dev, NULL);
+-    }
++    fpi_device_verify_complete (dev, NULL);
+   else
+-    {
+-      fpi_device_identify_report (dev, matched_print, NULL, NULL);
+-      reset_action_state (self);
+-      fpi_device_identify_complete (dev, NULL);
+-    }
++    fpi_device_identify_complete (dev, NULL);
+ }
+ 
+ static void
+-- 
+2.55.0
+

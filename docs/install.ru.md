@@ -98,6 +98,12 @@ auth  sufficient  pam_fprintd.so max-tries=3 timeout=15
 Менять ничего не нужно: `kscreenlocker` сам поставляет `/usr/lib/pam.d/kde-fingerprint` с
 `pam_fprintd.so`, и экран блокировки использует записанный в fprintd отпечаток.
 
+## Необязательно: патчи точности и скорости
+
+Три небольших патча к драйверу (повтор слабых кадров, порог покрытия, ответ за ~0,15 с вместо ~1,5 с) лежат в
+[`patches/`](../patches/); что они меняют и насколько верить замерам, написано в [accuracy-patch.ru.md](accuracy-patch.ru.md).
+Применяйте их к `libfprint-goodix5125` командой `git am` перед `makepkg` из шага 1.
+
 ## Проверка состояния
 
 ```sh
