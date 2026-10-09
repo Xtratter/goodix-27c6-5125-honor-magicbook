@@ -29,6 +29,7 @@ consequences for dual-boot are in [docs/install.md](docs/install.md) and
 |---|---|
 | [docs/install.md](docs/install.md) | step-by-step install and rollback (Arch/Manjaro) |
 | [docs/findings.md](docs/findings.md) | what was learned about the device, the protocol and the Windows driver |
+| [scripts/check.sh](scripts/check.sh) | read-only health check of the whole setup (run it after any system update) |
 | [tools/usbpcap.py](tools/usbpcap.py) | USBPcap pcap parser that does not need tshark |
 | [tools/frida_psk.py](tools/frida_psk.py) | attempt to capture the PSK on Windows (**did not work**) |
 

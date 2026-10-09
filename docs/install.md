@@ -98,6 +98,16 @@ and falls back to the password. Rollback: `sudo cp /etc/pam.d/sudo.bak-before-fp
 Nothing to change: `kscreenlocker` ships `/usr/lib/pam.d/kde-fingerprint` with `pam_fprintd.so`,
 and the lock screen uses the fingerprint enrolled in fprintd.
 
+## Health check
+
+```sh
+scripts/check.sh            # read-only checks, no touch needed
+scripts/check.sh --verify   # also runs fprintd-verify (touch the reader)
+```
+
+It checks that the reader is visible, the custom `libfprint` package and its `goodix5125` driver are
+installed, the PSK file exists, a finger is enrolled and PAM is configured. Run it after any system update.
+
 ## Updates
 
 `pacman` may replace the built package with the stock `libfprint`, after which the reader stops
