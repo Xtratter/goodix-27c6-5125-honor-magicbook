@@ -1,0 +1,41 @@
+From 4969284cb327e531dc2dd56e03ec3b1cf19539a8 Mon Sep 17 00:00:00 2001
+From: Xtratter <1359019+Xtratter@users.noreply.github.com>
+Date: Fri, 9 Oct 2026 10:33:19 +0300
+Subject: [PATCH] goodix5125: Retry frames below the engine quality/coverage
+ thresholds when matching
+
+The enrolment path rejects frames with coverage < 65 or quality < 25
+(OC_REJECT_TOO_SHORT / OC_REJECT_LOW_QUALITY), but oc_identify() scored
+such frames and reported a mismatch. The Windows engine applies the same
+min_image_coverage / min_image_quality when it compares a touch and retries
+instead. Do the same: report a retry, not a failed verification.
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+---
+ libfprint/drivers/goodix5125/chicago/openchicago.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/libfprint/drivers/goodix5125/chicago/openchicago.c b/libfprint/drivers/goodix5125/chicago/openchicago.c
+index 0115b3c..25110c5 100644
+--- a/libfprint/drivers/goodix5125/chicago/openchicago.c
++++ b/libfprint/drivers/goodix5125/chicago/openchicago.c
+@@ -823,6 +823,16 @@ oc_identify (OcSession      *self,
+       return TRUE;
+     }
+ 
++  /* The Windows engine applies the same frame thresholds when it compares a
++   * touch (min_image_coverage 65, min_image_quality 25) as when it enrols
++   * one: a weaker frame is retried instead of being scored as a mismatch. */
++  if (f->coverage < OC_ENGINE_MIN_COVERAGE)
++    result->reject = OC_REJECT_TOO_SHORT;
++  else if (f->quality < OC_ENGINE_MIN_QUALITY)
++    result->reject = OC_REJECT_LOW_QUALITY;
++  if (result->reject != OC_REJECT_NONE)
++    return TRUE;
++
+   memset (&best, 0, sizeof (best));
+   for (guint i = 0; i < n_templates; i++)
+     {
+-- 
+2.55.0
+

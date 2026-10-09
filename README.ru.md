@@ -28,6 +28,8 @@ HONOR MagicBook (модель BMH-WDX9) в Manjaro (KDE Plasma 6, Wayland). В W
 |---|---|
 | [docs/install.ru.md](docs/install.ru.md) | пошаговая установка и откат (Arch/Manjaro) |
 | [docs/findings.ru.md](docs/findings.ru.md) | что выяснено про устройство, протокол и Windows-драйвер |
+| [docs/accuracy-patch.ru.md](docs/accuracy-patch.ru.md) | патч: драйвер просит повторить слабый кадр вместо отказа, с замерами |
+| [patches/](patches/) | сам файл патча (`git am`) |
 | [scripts/check.sh](scripts/check.sh) | проверка состояния установки, только чтение (запускайте после обновлений системы) |
 | [tools/usbpcap.py](tools/usbpcap.py) | разбор pcap USBPcap без tshark |
 | [tools/frida_psk.py](tools/frida_psk.py) | попытка перехватить PSK в Windows (**не сработала**) |
