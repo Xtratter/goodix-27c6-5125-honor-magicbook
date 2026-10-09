@@ -98,6 +98,15 @@ and falls back to the password. Rollback: `sudo cp /etc/pam.d/sudo.bak-before-fp
 Nothing to change: `kscreenlocker` ships `/usr/lib/pam.d/kde-fingerprint` with `pam_fprintd.so`,
 and the lock screen uses the fingerprint enrolled in fprintd.
 
+## Using it on the lock screen (KDE Plasma 6.7)
+
+- **Wake the lock screen first.** The Plasma lock screen starts the fingerprint check only when its interface becomes visible, i.e. after a key
+  press, a click or a mouse movement (its `LockScreenUi.qml` calls `authenticator.startAuthenticating()` only on that event). Logs show the
+  reader being claimed 8-12 s after the lock, when the user first interacted. A finger placed right after locking is not read.
+- **Keep the finger down for about half a second** instead of tapping. A quick tap often gives a blank frame (the finger is gone before the image
+  is taken); the driver asks for another touch after three blank frames, which feels like "it does not work".
+- The interface hides again after 10 s and the check restarts when it is shown; move the mouse and touch again.
+
 ## Optional: accuracy and speed patches
 
 Three small patches to the driver (retry weak frames, a coverage limit, an answer in ~0.15 s instead of ~1.5 s)

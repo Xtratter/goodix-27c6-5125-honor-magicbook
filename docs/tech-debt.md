@@ -20,6 +20,14 @@ The three patches (retry weak frames, coverage limit 85%, early report) are veri
 real path (lock screen, `sudo`, resume from sleep): see the result of the live check in the notes below. After the early-report patch the number
 of retry prompts rose (all caused by blank frames); an A/B run of two package versions with the same technique would show whether it is the patch.
 
+## 2b. Lock screen starts the fingerprint check late (KDE, not the driver)
+
+Plasma 6.7.4 starts the fingerprint check only when the lock screen interface is shown (key, click or mouse move), 8-12 s after locking in the
+logs. Quick taps also give blank frames. Documented in `install.md`. Possible fix, **not done** because it edits the security-critical lock screen
+and would be overwritten by updates: a copy of the lock screen theme with one extra `authenticator.startAuthenticating()` call, to be tried first
+with `kscreenlocker_greet --testing`. A frame taken after waiting for full finger contact was considered and **rejected on the data**: in the
+collected natural taps no touch had a blank first frame and a good later frame.
+
 ## 3. Windows pairing
 
 A new random PSK was written to the sensor, so the Windows driver no longer matches the key it stored. Windows Hello may need the finger enrolled
