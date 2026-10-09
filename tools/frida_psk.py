@@ -1,8 +1,11 @@
 """Перехват CryptUnprotectData в процессах драйвера Goodix (WUDFHost.exe и т.п.).
 
+STATUS (EN): did NOT work in practice - no CryptUnprotectData calls were captured; kept
+as a starting point. Writing a new PSK was the path that worked (see docs/install.md).
+
 СТАТУС: на практике НЕ сработал (вызовы не были перехвачены, причину выяснить не
 удалось). Оставлен как отправная точка; рабочим путём оказалась запись нового PSK
-(см. docs/install.md).
+(см. docs/install.ru.md).
 
 Запускать в Windows от имени администратора:
     pip install frida frida-tools

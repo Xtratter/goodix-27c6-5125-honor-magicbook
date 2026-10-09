@@ -1,51 +1,54 @@
-# Goodix 27c6:5125 на HONOR MagicBook (BMH-WDX9) под Linux
+**English** | [Русский](README.ru.md)
 
-Заметки и инструменты по запуску сканера отпечатков **Goodix 27c6:5125** на ноутбуке
-HONOR MagicBook (модель BMH-WDX9) в Manjaro (KDE Plasma 6, Wayland). В Windows сканер работал,
-в Linux его не было видно ни в libfprint, ни в fprintd.
+# Goodix 27c6:5125 on HONOR MagicBook (BMH-WDX9) under Linux
 
-## Итог
+Notes and tools for getting the **Goodix 27c6:5125** fingerprint reader working on an HONOR
+MagicBook (model BMH-WDX9) under Manjaro (KDE Plasma 6, Wayland). The reader worked in Windows,
+but Linux did not see it: neither libfprint nor fprintd supported it.
 
-Сканер работает: `fprintd-enroll`, `fprintd-verify`, `sudo` по отпечатку и разблокировка
-экрана KDE проверены 2026-10-09.
+## Result
 
-Драйвер я не писал: он уже есть у сообщества. Использован драйвер libfprint
-`goodix5125` от [RuVl](https://github.com/RuVl/FingerprintDriver_27c6_5125)
+The reader works: `fprintd-enroll`, `fprintd-verify`, fingerprint `sudo` and KDE lock-screen
+unlock were tested on 2026-10-09.
+
+I did not write the driver; the community already has one. This setup uses the `goodix5125`
+libfprint driver by [RuVl](https://github.com/RuVl/FingerprintDriver_27c6_5125)
 (merge request [libfprint!669](https://gitlab.freedesktop.org/libfprint/libfprint/-/merge_requests/669),
-ветка `goodix5125-mr`). Он был собран из исходников как пакет `libfprint-goodix5125-git`,
-который заменяет системный `libfprint`.
+branch `goodix5125-mr`). It was built from source as the package `libfprint-goodix5125-git`,
+which replaces the system `libfprint`.
 
-Ключевая сложность - ключ сопряжения (TLS-PSK) между сканером и хостом: нулевой ключ из
-инструкции автора не подошёл, настоящий ключ из Windows достать не удалось, и в сканер был
-записан новый случайный PSK. Подробности и последствия для двойной загрузки - в
-[docs/install.md](docs/install.md) и [docs/findings.md](docs/findings.md).
+The main difficulty is the pairing key (TLS-PSK) shared by the reader and the host. The
+all-zero key from the driver author's instructions did not match, the real key could not be
+extracted from Windows, so a new random PSK was written to the reader. Details and the
+consequences for dual-boot are in [docs/install.md](docs/install.md) and
+[docs/findings.md](docs/findings.md).
 
-## Содержимое
+## Contents
 
-| Путь | Что это |
+| Path | What it is |
 |---|---|
-| [docs/install.md](docs/install.md) | пошаговая установка и откат (Arch/Manjaro) |
-| [docs/findings.md](docs/findings.md) | что выяснено про устройство, протокол и Windows-драйвер |
-| [tools/usbpcap.py](tools/usbpcap.py) | разбор pcap USBPcap без tshark |
-| [tools/frida_psk.py](tools/frida_psk.py) | попытка перехватить PSK в Windows (**не сработала**) |
+| [docs/install.md](docs/install.md) | step-by-step install and rollback (Arch/Manjaro) |
+| [docs/findings.md](docs/findings.md) | what was learned about the device, the protocol and the Windows driver |
+| [tools/usbpcap.py](tools/usbpcap.py) | USBPcap pcap parser that does not need tshark |
+| [tools/frida_psk.py](tools/frida_psk.py) | attempt to capture the PSK on Windows (**did not work**) |
 
-## Предупреждения
+## Warnings
 
-- **Не прошивайте и не стирайте MCU сканера.** По отчётам авторов, один такой 5125 был
-  выведен из строя перепрошивкой.
-- Запись нового PSK необратима (старый ключ из сканера прочитать нельзя) и может нарушить
-  сопряжение с Windows Hello на той же машине.
-- Режим «вход по кнопке питания» драйвера отключает проверку касания на ~3 минуты
-  (в том числе для `sudo`). Не включайте его без необходимости.
-- Всё проверено на одном устройстве. Ваш результат может отличаться.
+- **Never erase or flash the reader's MCU.** According to the driver authors, another 5125 was
+  bricked by reflashing.
+- Writing a new PSK is irreversible (the old key cannot be read back from the reader) and may
+  break the pairing with Windows Hello on the same machine.
+- The driver's "unlock by power button" mode skips the touch check for about 3 minutes
+  (including for `sudo`). Do not enable it unless you need it.
+- Everything was tested on a single unit. Your results may differ.
 
-## Что не публикуется
+## What is not published
 
-Файлы Windows-драйвера Goodix, блоб `Goodix_Cache.bin`, калибровка сенсора, дампы USB-трафика
-и журналы Windows содержат проприетарный код или данные конкретной машины, поэтому в репозитории
-их нет.
+The Windows Goodix driver files, the `Goodix_Cache.bin` blob, the sensor calibration, USB
+captures and Windows logs contain proprietary code or machine-specific data, so they are not in
+this repository.
 
-## Лицензия
+## License
 
-[MIT](LICENSE) - относится к текстам и скриптам этого репозитория. Драйвер libfprint и алгоритм
-openchicago по ссылкам выше распространяются под собственными лицензиями.
+[MIT](LICENSE) - covers the texts and scripts in this repository. The libfprint driver and the
+openchicago algorithm linked above are distributed under their own licenses.

@@ -1,20 +1,24 @@
-# Установка в Arch/Manjaro
+**English** | [Русский](install.ru.md)
 
-Проверено на Manjaro (ядро 6.18, KDE Plasma 6.7, fprintd 1.94.5, libfprint 1.94.100) на
-HONOR MagicBook BMH-WDX9. Команды с `sudo` выполняйте сами в терминале.
+# Installing on Arch/Manjaro
 
-**Сначала прочитайте код драйвера.** Он ставится как замена системного `libfprint` и работает
-с root-правами в составе fprintd. Я читал коммит `a9286cc` (ветка `goodix5125-mr`): в нём нет
-запуска процессов, сети и записей вне каталога `/var/lib/fprint/goodix5125`; запись PSK в
-сканер выполняется только при `GOODIX5125_PROVISION_PSK=random`.
+Tested on Manjaro (kernel 6.18, KDE Plasma 6.7, fprintd 1.94.5, libfprint 1.94.100) on an HONOR
+MagicBook BMH-WDX9. Run the `sudo` commands yourself in a terminal.
 
-## 1. Зависимости и сборка
+**Read the driver code first.** It is installed as a replacement for the system `libfprint` and
+runs with root privileges inside fprintd. I read commit `a9286cc` (branch `goodix5125-mr`): it
+does not start processes, use the network or write outside `/var/lib/fprint/goodix5125`; writing
+the PSK to the reader happens only with `GOODIX5125_PROVISION_PSK=random`.
+
+## 1. Dependencies and build
 
 ```sh
 sudo pacman -S --needed base-devel git meson libgusb glib2-devel fprintd
 
 git clone https://github.com/RuVl/FingerprintDriver_27c6_5125
 git clone --branch goodix5125-mr https://gitlab.freedesktop.org/RuVl/libfprint.git libfprint-goodix5125
+# pin to the exact commit that was reviewed and tested
+git -C libfprint-goodix5125 checkout -B goodix5125-mr a9286cc
 
 cd FingerprintDriver_27c6_5125/packaging/arch
 LIBFPRINT_GOODIX5125_REPO=file://$HOME/libfprint-goodix5125 \
@@ -22,22 +26,22 @@ LIBFPRINT_GOODIX5125_BRANCH=goodix5125-mr \
 makepkg -C
 ```
 
-Так собирается ровно тот код, который вы только что прочитали, а не свежая версия ветки.
-Результат: файл `libfprint-goodix5125-git-*.pkg.tar.zst` в `packaging/arch/`.
+This builds exactly the code you just read, not the latest version of the branch. The result is
+a `libfprint-goodix5125-git-*.pkg.tar.zst` file in `packaging/arch/`.
 
-## 2. Установка
+## 2. Install
 
 ```sh
-sudo pacman -U libfprint-goodix5125-git-*.pkg.tar.zst   # на вопрос о замене libfprint ответьте «да»
+sudo pacman -U libfprint-goodix5125-git-*.pkg.tar.zst   # answer "yes" when asked to replace libfprint
 sudo systemctl restart fprintd
 ```
 
-Откат: `sudo pacman -S libfprint`.
+Rollback: `sudo pacman -S libfprint`.
 
-## 3. Ключ сопряжения (PSK)
+## 3. Pairing key (PSK)
 
-Драйвер читает ключ из `/var/lib/fprint/goodix5125/psk` и сравнивает его хеш с тем, что хранит
-сканер. Сначала проверьте нулевой ключ (у автора драйвера Windows использует именно его):
+The driver reads the key from `/var/lib/fprint/goodix5125/psk` and compares its hash with the one
+the reader stores. Try the all-zero key first (the driver author's Windows driver uses it):
 
 ```sh
 sudo install -d -m 700 /var/lib/fprint/goodix5125
@@ -45,56 +49,56 @@ printf '%064d\n' 0 | sudo install -m 600 /dev/stdin /var/lib/fprint/goodix5125/p
 fprintd-enroll -f right-thumb
 ```
 
-Если регистрация упала с `enroll-unknown-error`, причина в журнале:
-`journalctl -u fprintd --since -5min --no-pager`. Сообщение `hash differs` значит,
-что в сканере другой ключ. Сканер при этом не изменяется.
+If enrollment failed with `enroll-unknown-error`, the cause is in the journal:
+`journalctl -u fprintd --since -5min --no-pager`. The message `hash differs` means the reader holds
+a different key. The reader is not modified in that case.
 
-### Запись нового ключа (только если нулевой не подошёл)
+### Writing a new key (only if the zero key did not match)
 
-Это необратимо и может нарушить сопряжение с Windows. Сначала **удалите файл ключа**, иначе
-драйвер запишет в сканер ключ из этого файла (нулевой):
+This is irreversible and may break pairing with Windows. First **delete the key file**; otherwise
+the driver will write the key from that file (all zeros) to the reader:
 
 ```sh
 sudo rm /var/lib/fprint/goodix5125/psk
 sudo systemctl set-environment GOODIX5125_PROVISION_PSK=random
 sudo systemctl restart fprintd
-fprintd-enroll -f right-thumb      # первое открытие устройства записывает ключ
+fprintd-enroll -f right-thumb      # the first open of the device writes the key
 sudo systemctl unset-environment GOODIX5125_PROVISION_PSK
 sudo systemctl restart fprintd
 ```
 
-После этого **не удаляйте** `/var/lib/fprint/goodix5125/psk`: это единственная копия ключа.
+Afterwards **do not delete** `/var/lib/fprint/goodix5125/psk`: it is the only copy of the key.
 
-## 4. Проверка
+## 4. Verify
 
 ```sh
 fprintd-verify
 ```
 
-Ожидаемый ответ: `verify-match`. Регистрация занимает около 13 касаний: слегка сдвигайте
-палец, но держите его на одной части подушечки.
+Expected answer: `verify-match`. Enrollment takes about 13 touches: shift your finger slightly
+each time, but keep it on the same part of the fingertip.
 
-## 5. sudo по отпечатку
+## 5. Fingerprint for sudo
 
 ```sh
 sudo cp /etc/pam.d/sudo /etc/pam.d/sudo.bak-before-fprint
 ```
 
-Затем добавьте **первой строкой `auth`** в `/etc/pam.d/sudo`:
+Then add this as the **first `auth` line** of `/etc/pam.d/sudo`:
 
 ```
 auth  sufficient  pam_fprintd.so max-tries=3 timeout=15
 ```
 
-Правьте файл при открытой root-оболочке в другом окне. Без касания `sudo` ждёт 15 секунд и
-переходит к паролю. Откат: `sudo cp /etc/pam.d/sudo.bak-before-fprint /etc/pam.d/sudo`.
+Edit the file with a root shell open in another window. Without a touch `sudo` waits 15 seconds
+and falls back to the password. Rollback: `sudo cp /etc/pam.d/sudo.bak-before-fprint /etc/pam.d/sudo`.
 
-## 6. Экран блокировки KDE
+## 6. KDE lock screen
 
-Менять ничего не нужно: `kscreenlocker` сам поставляет `/usr/lib/pam.d/kde-fingerprint` с
-`pam_fprintd.so`, и экран блокировки использует записанный в fprintd отпечаток.
+Nothing to change: `kscreenlocker` ships `/usr/lib/pam.d/kde-fingerprint` with `pam_fprintd.so`,
+and the lock screen uses the fingerprint enrolled in fprintd.
 
-## Обновления
+## Updates
 
-`pacman` может заменить собранный пакет обычным `libfprint`, после чего сканер перестанет
-работать. Тогда повторите шаг 2 или добавьте `libfprint` в `IgnorePkg` в `/etc/pacman.conf`.
+`pacman` may replace the built package with the stock `libfprint`, after which the reader stops
+working. In that case repeat step 2, or add `libfprint` to `IgnorePkg` in `/etc/pacman.conf`.
