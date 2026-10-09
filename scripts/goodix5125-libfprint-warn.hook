@@ -1,0 +1,15 @@
+# pacman hook: after fprintd/libfprint change, warn if the custom Goodix 5125 driver is not the installed libfprint.
+# Install (root): sudo install -Dm644 scripts/goodix5125-libfprint-warn.hook /etc/pacman.d/hooks/goodix5125-libfprint-warn.hook
+# Хук pacman: предупреждает, если после обновления вместо нашего драйвера стоит штатный libfprint.
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = libfprint
+Target = fprintd
+Target = libfprint-goodix5125-git
+
+[Action]
+Description = Checking that the Goodix 5125 libfprint driver is still installed...
+When = PostTransaction
+Exec = /usr/bin/bash -c 'pacman -Q libfprint-goodix5125-git >/dev/null 2>&1 || echo "WARNING: libfprint-goodix5125-git is not installed; the Goodix 27c6:5125 reader will not work. Rebuild with scripts/rebuild.sh (docs/install.md)."'

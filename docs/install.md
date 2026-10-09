@@ -135,4 +135,9 @@ The built package is named `libfprint-goodix5125-git` and provides `libfprint`, 
   in `/etc/pacman.conf` makes `pacman` ask for confirmation first. This is optional: it guards
   against a mistake, not against normal updates.
 
+**Rebuilding after an update.** `scripts/rebuild.sh` clones the two repositories, pins the reviewed driver commit, applies `patches/` and builds the
+package in a gentle mode (`nice`, two cores). It installs nothing; it prints the `pacman -U` command. Optional warning after updates: install
+`scripts/goodix5125-libfprint-warn.hook` as `/etc/pacman.d/hooks/goodix5125-libfprint-warn.hook` (root); it prints a warning when the custom
+driver is no longer the installed `libfprint`.
+
 After any system update run `scripts/check.sh`: it shows whether the driver is still in place.
