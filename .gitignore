@@ -1,0 +1,13 @@
+# Секреты и данные конкретной машины - не коммитить
+psk
+*.psk
+Goodix_Cache.bin
+goodix_calib.dat
+*.pcap
+*.pcapng
+*.evtx
+goodix_debug*
+*.dll
+*.exe
+*.pkg.tar.zst
+dumps/
