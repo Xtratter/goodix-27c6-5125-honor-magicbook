@@ -110,5 +110,14 @@ installed, the PSK file exists, a finger is enrolled and PAM is configured. Run 
 
 ## Updates
 
-`pacman` may replace the built package with the stock `libfprint`, after which the reader stops
-working. In that case repeat step 2, or add `libfprint` to `IgnorePkg` in `/etc/pacman.conf`.
+The built package is named `libfprint-goodix5125-git` and provides `libfprint`, so a normal
+`pacman -Syu` does not install the stock `libfprint` over it. Two things can still break the setup:
+
+- **A new `fprintd` that needs a newer `libfprint` ABI.** `pacman` then reports a dependency error.
+  Rebuild the driver on a newer base (repeat steps 1-2 with a newer driver branch) instead of
+  forcing the update.
+- **Installing the stock package by hand** (`pacman -S libfprint`). Adding `libfprint` to `IgnorePkg`
+  in `/etc/pacman.conf` makes `pacman` ask for confirmation first. This is optional: it guards
+  against a mistake, not against normal updates.
+
+After any system update run `scripts/check.sh`: it shows whether the driver is still in place.

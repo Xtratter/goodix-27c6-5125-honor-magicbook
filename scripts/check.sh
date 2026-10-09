@@ -31,9 +31,9 @@ if command -v pacman >/dev/null; then
     fail "fprintd is not installed"
   fi
   if grep -Eqs '^\s*IgnorePkg\s*=.*\blibfprint\b' /etc/pacman.conf; then
-    pass "libfprint is in IgnorePkg (pacman will not replace the custom build)"
+    pass "libfprint is in IgnorePkg (stock libfprint will not be installed by accident)"
   else
-    note "libfprint is not in IgnorePkg: a system update may replace the custom package"
+    note "libfprint is not in IgnorePkg (optional: it only guards against installing the stock package by accident)"
   fi
 else
   note "pacman not found - package checks skipped"
