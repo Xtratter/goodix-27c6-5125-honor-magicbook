@@ -8,8 +8,9 @@ biometric data and stay on the owner's machine. The lab is a local repository an
 
 ## Verdict
 
-**Candidate B (band-limited phase-only correlation with a multi-patch template) does not reach the current matcher, `openchicago`, if one
-impostor touch was the enrolled finger (the evidence points this way); the verdict is open until the owner confirms which finger it was.**
+**Candidate B (band-limited phase-only correlation with a multi-patch template) fails the success criterion**: it does not reach the
+current matcher, `openchicago`. The owner confirmed that touches with wrong fingers happened during collection, which settles the one
+doubtful impostor touch as the enrolled finger.
 
 Protocol `varied -> natural-1`, development split, one effective fold, **12 distinct genuine** and **17-21 distinct impostor** touches:
 
@@ -55,10 +56,11 @@ impostors do not show a FAR below roughly 15%. The `openchicago` session is adap
 collected. The laptop reset several times on battery right after bursts of all-core load (cause not proven), so the lab limits every computation to
 two threads and two cores.
 
-## Decision for the owner
+## Decision
 
-1. **Confirm which finger the doubtful touch was.** It decides whether `openchicago` is 0% or 100% FRR@FAR0 on this set.
-2. **Candidate C** (the design's default after a failed M2): local patches or keypoints with a consistent-displacement check, prototyped on the same
-   development split and decided on fresh data plus `natural-2`.
-3. **Or stop** and keep `openchicago` with the three published patches; the design replaces it because it is a port of the Windows logic, not
-   because of its accuracy.
+The design's default path after a failed M2 is candidate C. The owner delegated the choice and it was taken to **stop here**:
+`openchicago` with the three published patches separates this data perfectly (0% FRR@FAR0, gap +28), the dataset is too small and its labels
+too unreliable for a fair new test, and the remaining reason to replace `openchicago` is the provenance of its code, not its accuracy.
+
+To resume: collect new data with a checked protocol (one finger per run, labels confirmed), then prototype candidate C in the same lab and
+decide on the untouched holdout plus the missing `natural-2` session. Every decision taken is in the lab's `docs/execution-ledger.md`.
