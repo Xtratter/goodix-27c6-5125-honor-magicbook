@@ -28,6 +28,15 @@ and would be overwritten by updates: a copy of the lock screen theme with one ex
 with `kscreenlocker_greet --testing`. A frame taken after waiting for full finger contact was considered and **rejected on the data**: in the
 collected natural taps no touch had a blank first frame and a good later frame.
 
+**Experiment (2026-10-09), result: the lock screen could not be made to start the check by itself.** A user-level copy of the
+lock screen (`kscreenlocker_greet --testing --shell local.fptest`, system files untouched) with an extra `authenticator.startAuthenticating()`
+call, first at creation and then after 600 ms, did **not** start fprintd until the first touch (lock at 14:25:44, fprintd at 14:25:54; lock at
+14:26:54, fprintd at 14:27:15), so the call alone is not enough and the greeter's internals would have to be studied. The copy was removed.
+**Likely root cause of the lost first touch:** the sensor is the power button, so the touch itself wakes the lock screen; the check then starts
+while the finger still rests on the sensor and the driver's initialization refuses to calibrate with a finger on it (`Finger contact changed during
+Goodix calibration; remove the finger`), after which the lock screen restarts the check. Possible driver-side fixes, not done: wait for the finger
+to be lifted instead of failing, or reuse a cached no-finger base so that a resting finger is tolerated (both change the recorded device tests).
+
 ## 3. Windows pairing
 
 A new random PSK was written to the sensor, so the Windows driver no longer matches the key it stored. Windows Hello may need the finger enrolled
