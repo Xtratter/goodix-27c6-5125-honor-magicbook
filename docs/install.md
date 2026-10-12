@@ -129,6 +129,13 @@ scripts/check.sh --verify   # also runs fprintd-verify (touch the reader)
 It checks that the reader is visible, the custom `libfprint` package and its `goodix5125` driver are
 installed, the PSK file exists, a finger is enrolled and PAM is configured. Run it after any system update.
 
+## Dual boot with Windows
+
+Windows writes its own pairing key into the sensor when it starts, so after booting Windows the Linux key no longer matches (`fprintd` logs
+`Goodix PSK ... does not match the sensor (hash differs)` and `fprintd-verify` returns `verify-unknown-error`). The key file is not damaged.
+Write the Linux key back: `sudo scripts/restore-psk.sh`, then `fprintd-verify`. Windows then fails to recognise the sensor until it rewrites its key,
+so after every switch between the systems the key has to be restored. Keep a backup of the key file (see section 3).
+
 ## Updates
 
 The built package is named `libfprint-goodix5125-git` and provides `libfprint`, so a normal

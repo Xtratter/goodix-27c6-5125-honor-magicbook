@@ -42,6 +42,9 @@ to be lifted instead of failing, or reuse a cached no-finger base so that a rest
 A new random PSK was written to the sensor, so the Windows driver no longer matches the key it stored. Windows Hello may need the finger enrolled
 again and Linux may then need re-pairing; not verified. Never delete `/var/lib/fprint/goodix5125/psk` (the old key is unrecoverable).
 
+**Update 2026-10-12: confirmed.** After booting Windows the sensor held Windows' key (`hash differs`); the Linux key file was unchanged. Windows rewrites
+the key on its own, so the two systems alternate. Fix per boot: `scripts/restore-psk.sh` (see `install.md`). Not investigated: stopping Windows from rewriting it.
+
 ## 4. Clean-matcher project (stopped after stage 1)
 
 Candidate B (BLPOC) failed against `openchicago`; the project was stopped by decision. To resume: collect new, carefully labelled data (one finger
