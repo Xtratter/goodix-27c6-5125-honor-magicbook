@@ -19,7 +19,8 @@ trap cleanup EXIT
 
 systemctl set-environment GOODIX5125_PROVISION_PSK=random
 systemctl restart fprintd
-# any open of the device writes the key; fprintd-list opens it
-timeout 20 fprintd-list "${SUDO_USER:-root}" >/dev/null 2>&1 || true
+# the key is written when the device is opened; a verify of an enrolled user opens it (no touch needed: it is stopped after a few seconds)
+user=${SUDO_USER:-$(find /var/lib/fprint -mindepth 1 -maxdepth 1 -type d ! -name goodix5125 -printf '%f\n' | head -1)}
+timeout 6 fprintd-verify "$user" >/dev/null 2>&1 || true
 journalctl -u fprintd --since -1min --no-pager | grep -E 'provisioning|does not match' || echo "no provisioning message: check 'journalctl -u fprintd'"
 echo "Now run: fprintd-verify (touch the sensor)"

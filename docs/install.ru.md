@@ -136,6 +136,10 @@ Windows при запуске записывает в датчик свой кл
 Верните ключ Linux: `sudo scripts/restore-psk.sh`, затем `fprintd-verify`. После этого Windows не узнаёт датчик, пока снова не запишет свой ключ,
 поэтому после каждого переключения между системами ключ нужно возвращать. Храните резервную копию файла ключа (раздел 3).
 
+Необязательно: автоматический возврат ключа при загрузке (root): `sudo install -m 755 scripts/restore-psk.sh /usr/local/sbin/goodix5125-restore-psk`,
+затем `sudo install -m 644 scripts/goodix5125-restore-psk.service /etc/systemd/system/` и `sudo systemctl enable goodix5125-restore-psk.service`.
+Скрипт ставьте вне домашней папки: root не должен запускать файл, который может менять ваш пользователь. Откат: `systemctl disable --now` для сервиса и удаление обоих файлов.
+
 ## Обновления
 
 Собранный пакет называется `libfprint-goodix5125-git` и предоставляет `libfprint`, поэтому обычный

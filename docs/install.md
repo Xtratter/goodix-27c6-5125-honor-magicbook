@@ -136,6 +136,10 @@ Windows writes its own pairing key into the sensor when it starts, so after boot
 Write the Linux key back: `sudo scripts/restore-psk.sh`, then `fprintd-verify`. Windows then fails to recognise the sensor until it rewrites its key,
 so after every switch between the systems the key has to be restored. Keep a backup of the key file (see section 3).
 
+Optional automatic restore at boot (root): `sudo install -m 755 scripts/restore-psk.sh /usr/local/sbin/goodix5125-restore-psk`, then
+`sudo install -m 644 scripts/goodix5125-restore-psk.service /etc/systemd/system/` and `sudo systemctl enable goodix5125-restore-psk.service`.
+Install the script outside your home directory: root must not run a file your user can edit. Rollback: `systemctl disable --now` the service and delete both files.
+
 ## Updates
 
 The built package is named `libfprint-goodix5125-git` and provides `libfprint`, so a normal

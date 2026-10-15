@@ -1,0 +1,12 @@
+[Unit]
+Description=Write the Linux pairing key back into the Goodix 27c6:5125 sensor
+After=dbus.service local-fs.target
+Wants=dbus.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/goodix5125-restore-psk
+TimeoutStartSec=60
+
+[Install]
+WantedBy=multi-user.target
