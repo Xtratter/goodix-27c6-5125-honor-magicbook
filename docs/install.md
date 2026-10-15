@@ -104,6 +104,12 @@ and the lock screen uses the fingerprint enrolled in fprintd.
 `auth  sufficient  pam_fprintd.so max-tries=3 timeout=15`, then test with `pkexec true`. Rollback: delete `/etc/pam.d/polkit-1`.
 Write the file from a temporary file (`sudo install -m 644 file /etc/pam.d/polkit-1`): an empty PAM file breaks these dialogs.
 
+## Login screen (SDDM)
+
+The fingerprint is not offered at the first login after power-on, and this is expected: `/etc/pam.d/sddm` has no `pam_fprintd.so`, and the KDE wallet is
+opened by the password anyway (a fingerprint login would not unlock it). The fingerprint works for `sudo`, polkit dialogs and the lock screen. Adding it to
+SDDM is not recommended: a mistake in that PAM file can lock you out of the login screen.
+
 ## Using it on the lock screen (KDE Plasma 6.7)
 
 - **Wake the lock screen first.** The Plasma lock screen starts the fingerprint check only when its interface becomes visible, i.e. after a key
